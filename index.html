@@ -60,8 +60,8 @@
   }
   .gantt {
     display: grid;
-    grid-template-columns: 70px repeat(34, minmax(22px, 1fr));
-    gap: 0; min-width: 960px; position: relative;
+    grid-template-columns: 70px repeat(34, minmax(38px, 1fr));
+    gap: 0; min-width: 1600px; position: relative;
     border-left: 1px solid #b9c4d4; border-right: 1px solid #b9c4d4;
   }
   .cell { height: 38px; background: #f0f3f8; position: relative; border-right: 1px solid #e3e9f2; }
@@ -119,82 +119,10 @@
   .block.lunch   { background: #d98e4a; }
   .block.snack   { background: #8d6e63; }
   .block.dinner  { background: #a0522d; }
-  .block.food    { background: #c06830; }
   .block.homework { background: #5a7fb8; }
   .block.free    { background: #cfdcec; color: #4a5a75; }
   .block.bed     { background: #4a5a75; }
   .block.sleep   { background: #2c3e50; }
-
-  /* === КОМПАКТНЫЙ ГОРИЗОНТАЛЬНЫЙ (телефон) === */
-  .compact-wrapper {
-    display: none;
-    overflow-x: auto; background: #fff; border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.07); padding: 10px;
-    -webkit-overflow-scrolling: touch;
-  }
-  .compact-gantt {
-    display: grid;
-    grid-template-columns: 54px repeat(34, minmax(16px, 1fr));
-    gap: 0; min-width: 780px; position: relative;
-    border-left: 1px solid #b9c4d4; border-right: 1px solid #b9c4d4;
-  }
-  .compact-cell { height: 56px; background: #f0f3f8; position: relative; border-right: 1px solid #e3e9f2; }
-  .compact-cell.hour-start { background: #e6ebf3; }
-  .compact-cell.hour-start::before {
-    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
-    width: 1px; background: #b9c4d4;
-  }
-  .compact-cell.weekend-start,
-  .compact-header.weekend-start,
-  .compact-day.weekend-start {
-    border-top: 2px solid #b9c4d4;
-  }
-  .compact-header {
-    height: 22px; font-size: 8px; font-weight: 600; color: #55627a;
-    display: flex; align-items: center; justify-content: center;
-    border-right: 1px solid #e3e9f2; background: #f7f9fc; position: relative;
-  }
-  .compact-header.hour-start { color: #2c3e50; font-weight: 700; background: #eef2f8; }
-  .compact-header.hour-start::before {
-    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
-    width: 1px; background: #b9c4d4;
-  }
-  .compact-header.half { color: #b0bacb; font-weight: 400; font-size: 0; border-right: none; }
-  .compact-day {
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 11px; color: #1a2a4a; height: 56px;
-    background: #eef1f7; border-right: 1px solid #b9c4d4;
-    border-bottom: 1px solid #e3e9f2;
-  }
-  .compact-day.weekend { background: #e3ddf0; color: #4a3a6a; }
-  .compact-block {
-    position: absolute; height: 56px; border-radius: 5px;
-    display: flex; align-items: center; justify-content: center;
-    color: #fff; font-size: 11px; font-weight: 700; line-height: 1.1;
-    padding: 0 4px; text-align: center; overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.18); z-index: 2;
-    cursor: pointer;
-  }
-  .compact-block .name { white-space: nowrap; }
-  .compact-block .icon-only { font-size: 20px; line-height: 1; }
-
-  .compact-block.wake    { background: #6b7a90; }
-  .compact-block.gather  { background: #7f8ea3; }
-  .compact-block.school  { background: #4a90d9; }
-  .compact-block.extra   { background: #3cb371; }
-  .compact-block.volleyball { background: #e0a800; color: #4a3800; }
-  .compact-block.kgd     { background: #f0883e; }
-  .compact-block.art     { background: #9b59b6; }
-  .compact-block.english { background: #e74c3c; }
-  .compact-block.road    { background: #b0b8c4; }
-  .compact-block.lunch   { background: #d98e4a; }
-  .compact-block.snack   { background: #8d6e63; }
-  .compact-block.dinner  { background: #a0522d; }
-  .compact-block.food    { background: #c06830; }
-  .compact-block.homework { background: #5a7fb8; }
-  .compact-block.free    { background: #cfdcec; color: #4a5a75; }
-  .compact-block.bed     { background: #4a5a75; }
-  .compact-block.sleep   { background: #2c3e50; }
 
   /* === ВЕРТИКАЛЬНЫЙ ВИД === */
   .day-card {
@@ -228,7 +156,6 @@
   .entry-bar.lunch   { background: #d98e4a; }
   .entry-bar.snack   { background: #8d6e63; }
   .entry-bar.dinner  { background: #a0522d; }
-  .entry-bar.food    { background: #c06830; }
   .entry-bar.homework { background: #5a7fb8; }
   .entry-bar.free    { background: #cfdcec; }
   .entry-bar.bed     { background: #4a5a75; }
@@ -318,20 +245,12 @@
   <button data-view="horizontal">Горизонтально</button>
 </div>
 
-<!-- Полный горизонтальный вид (компьютер / планшет / кнопка «Горизонтально») -->
 <div class="desktop-view">
   <div class="chart-wrapper">
     <div class="gantt" id="gantt"></div>
   </div>
 </div>
 
-<!-- Компактный горизонтальный вид (телефон в горизонтальной ориентации) -->
-<div class="compact-wrapper" id="compactWrapper">
-  <div class="compact-gantt" id="compactGantt"></div>
-  <p class="hint">Компактный вид · тап по блоку — подробнее</p>
-</div>
-
-<!-- Вертикальный вид -->
 <div class="mobile-view" id="mobileList"></div>
 
 <div class="modal-overlay" id="modal">
@@ -411,13 +330,13 @@
     wake: 'Подъём', gather: 'Сбор в школу', school: 'Школа', extra: 'Доп. занятия',
     volleyball: 'Волейбол', kgd: 'КГД', art: 'ДХШ',
     english: 'Английский', road: 'Дорога', lunch: 'Обед', snack: 'Перекус',
-    dinner: 'Ужин', food: 'Еда', homework: 'Домашка', free: 'Св. время', bed: 'Сказка', sleep: 'Сон'
+    dinner: 'Ужин', homework: 'Домашка', free: 'Св. время', bed: 'Сказка', sleep: 'Сон'
   };
   const typeColors = {
     wake: '#6b7a90', gather: '#7f8ea3', school: '#4a90d9', extra: '#3cb371',
     volleyball: '#e0a800', kgd: '#f0883e', art: '#9b59b6',
     english: '#e74c3c', road: '#b0b8c4', lunch: '#d98e4a', snack: '#8d6e63',
-    dinner: '#a0522d', food: '#c06830', homework: '#5a7fb8', free: '#cfdcec', bed: '#4a5a75', sleep: '#2c3e50'
+    dinner: '#a0522d', homework: '#5a7fb8', free: '#cfdcec', bed: '#4a5a75', sleep: '#2c3e50'
   };
 
   function slotToTime(slot) {
@@ -630,11 +549,11 @@
       if (view === 'horizontal') document.body.classList.add('force-horizontal');
       if (view === 'vertical') document.body.classList.add('force-vertical');
       toggleButtons.forEach(b => b.classList.toggle('active', b === btn));
-      setTimeout(() => { renderDesktop(); renderCompact(); }, 50);
+      setTimeout(() => { renderDesktop(); }, 50);
     });
   });
 
-  // === ПОЛНАЯ ГОРИЗОНТАЛЬНАЯ ДИАГРАММА ===
+  // === ГОРИЗОНТАЛЬНАЯ ДИАГРАММА ===
   const gantt = document.getElementById('gantt');
   const emptyHeader = document.createElement('div');
   emptyHeader.className = 'header-cell hour-start';
@@ -736,119 +655,6 @@
     });
   }
 
-  // === КОМПАКТНАЯ ГОРИЗОНТАЛЬНАЯ ДИАГРАММА (телефон) ===
-  const compactGantt = document.getElementById('compactGantt');
-
-  // В компактном виде показываем только эти типы
-  const COMPACT_TYPES = ['school', 'extra', 'volleyball', 'kgd', 'art', 'english', 'homework', 'food', 'lunch', 'snack', 'dinner'];
-
-  // Для компактного вида объединяем завтрак/обед/перекус/ужин в «Еда»
-  function compactEvents() {
-    const out = [];
-    events.forEach(([day, s, e, type, name, realTime]) => {
-      if (type === 'lunch' || type === 'snack' || type === 'dinner') {
-        out.push([day, s, e, 'food', 'Еда', realTime]);
-      } else if (type === 'free' || type === 'road' || type === 'wake' || type === 'gather' || type === 'bed' || type === 'sleep') {
-        // пропускаем в компактном
-      } else {
-        out.push([day, s, e, type, name, realTime]);
-      }
-    });
-    return out;
-  }
-
-  const compactEmptyHeader = document.createElement('div');
-  compactEmptyHeader.className = 'compact-header hour-start';
-  compactEmptyHeader.style.background = '#eef1f7';
-  compactGantt.appendChild(compactEmptyHeader);
-
-  for (let i = 0; i < TOTAL_SLOTS; i++) {
-    const slotHour = START_HOUR + i / 2;
-    const isHalf = i % 2 === 1;
-    const isHourStart = i % 2 === 0;
-    const hc = document.createElement('div');
-    hc.className = 'compact-header' + (isHalf ? ' half' : '') + (isHourStart ? ' hour-start' : '');
-    if (!isHalf) {
-      const h = Math.floor(slotHour);
-      const m = Math.round((slotHour - h) * 60);
-      hc.textContent = String(h).padStart(2, '0') + (m ? ':' + String(m).padStart(2, '0') : '');
-    } else {
-      hc.textContent = '';
-    }
-    compactGantt.appendChild(hc);
-  }
-
-  days.forEach((day, dayIndex) => {
-    const isWeekend = weekends.includes(day);
-    const label = document.createElement('div');
-    label.className = 'compact-day' + (isWeekend ? ' weekend' : '');
-    if (dayIndex === 5) label.classList.add('weekend-start');
-    label.textContent = dayShort[day];
-    label.title = day;
-    compactGantt.appendChild(label);
-    for (let i = 0; i < TOTAL_SLOTS; i++) {
-      const isHourStart = i % 2 === 0;
-      const cell = document.createElement('div');
-      cell.className = 'compact-cell' + (isHourStart ? ' hour-start' : '');
-      if (dayIndex === 5) cell.classList.add('weekend-start');
-      compactGantt.appendChild(cell);
-    }
-  });
-
-  function renderCompact() {
-    compactGantt.querySelectorAll('.compact-block').forEach(b => b.remove());
-    if (compactGantt.offsetWidth === 0) return;
-
-    const rect = compactGantt.getBoundingClientRect();
-    const headers = compactGantt.querySelectorAll('.compact-header');
-    const slotCells = Array.from(headers).slice(1);
-    if (slotCells.length === 0) return;
-    const firstRect = slotCells[0].getBoundingClientRect();
-    const lastRect  = slotCells[slotCells.length - 1].getBoundingClientRect();
-    const chartLeft  = firstRect.left - rect.left;
-    const chartRight = lastRect.right - rect.left;
-    const chartWidth = chartRight - chartLeft;
-    const dayRowHeight = 56;
-    const headerHeight = 22;
-
-    compactEvents().forEach(([day, startSlot, endSlot, type, name, realTime]) => {
-      const dayIndex = days.indexOf(day);
-      if (dayIndex === -1) return;
-      const rowTop = headerHeight + dayIndex * dayRowHeight;
-      const startFrac = startSlot / TOTAL_SLOTS;
-      const endFrac   = endSlot   / TOTAL_SLOTS;
-      const left  = chartLeft + startFrac * chartWidth;
-      const width = (endFrac - startFrac) * chartWidth;
-      const block = document.createElement('div');
-      block.className = 'compact-block ' + type;
-      block.style.left = left + 'px';
-      block.style.top = rowTop + 'px';
-      block.style.width = Math.max(width, 18) + 'px';
-      block.style.height = dayRowHeight + 'px';
-
-      const real = getRealInterval(type, startSlot, endSlot);
-      const displayName = typeNames[type] || name || '—';
-      block.title = `${day} · ${displayName} · ${real.interval} (${real.duration})`;
-
-      if (type === 'food') {
-        const iconEl = document.createElement('div');
-        iconEl.className = 'icon-only';
-        iconEl.textContent = '🍽';
-        block.appendChild(iconEl);
-      } else {
-        const nameEl = document.createElement('div');
-        nameEl.className = 'name';
-        nameEl.textContent = displayName;
-        block.appendChild(nameEl);
-      }
-
-      block.addEventListener('click', () => {
-        openModal({ day, startSlot, endSlot, type, name });
-      });
-      compactGantt.appendChild(block);
-    });
-  }
-
   // === ВЕРТИКАЛЬНЫЙ ВИД ===
   function renderMobileList() {
     const listEl = document.getElementById('mobileList');
@@ -915,46 +721,14 @@
     });
   }
 
-  // === УПРАВЛЕНИЕ ВИДИМОСТЬЮ: на телефоне в горизонтали — компактный вид ===
-  function updateCompactVisibility() {
-    const isPhoneLandscape = window.innerWidth > window.innerHeight && window.innerHeight < 500;
-    const compactWrapper = document.getElementById('compactWrapper');
-    const desktopWrapper = document.querySelector('.desktop-view .chart-wrapper');
-
-    if (isPhoneLandscape) {
-      // Телефон в горизонтальной ориентации — компактный
-      compactWrapper.style.display = 'block';
-      if (desktopWrapper) desktopWrapper.style.display = 'none';
-    } else {
-      compactWrapper.style.display = 'none';
-      if (desktopWrapper) desktopWrapper.style.display = '';
-    }
-  }
-
   window.addEventListener('load', () => {
     renderDesktop();
-    renderCompact();
     renderMobileList();
-    updateCompactVisibility();
   });
   window.addEventListener('resize', () => {
     renderDesktop();
-    renderCompact();
-    updateCompactVisibility();
   });
-  window.addEventListener('orientationchange', () => {
-    setTimeout(() => {
-      renderDesktop();
-      renderCompact();
-      updateCompactVisibility();
-    }, 200);
-  });
-  setTimeout(() => {
-    renderDesktop();
-    renderCompact();
-    renderMobileList();
-    updateCompactVisibility();
-  }, 100);
+  setTimeout(() => { renderDesktop(); renderMobileList(); }, 100);
 </script>
 
 </body>
