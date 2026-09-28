@@ -383,7 +383,7 @@
     ['Четверг',     14.33, 16.33, 'extra', 'Доп. занятия', '13:10–14:10'],
     ['Пятница',     14.33, 16.33, 'extra', 'Доп. занятия', '13:10–14:10'],
 
-    // Перекус 🍴
+    // Перекус 🍔
     ['Вторник', 16.33, 16.67, 'snack', 'Перекус', '14:10–14:20'],
     ['Четверг', 16.33, 16.67, 'snack', 'Перекус', '14:10–14:20'],
 
@@ -627,7 +627,7 @@
       if (type === 'snack') {
         const iconEl = document.createElement('div');
         iconEl.className = 'icon-only';
-        iconEl.textContent = '🍴';
+        iconEl.textContent = '🍔';
         block.appendChild(iconEl);
       } else {
         const nameEl = document.createElement('div');
@@ -692,7 +692,7 @@
         const title = document.createElement('div');
         title.className = 'entry-title';
         if (type === 'snack') {
-          title.textContent = '🍴 Перекус';
+          title.textContent = '🍔 Перекус';
         } else {
           title.textContent = typeNames[type] || name || '—';
         }
