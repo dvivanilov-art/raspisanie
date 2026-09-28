@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Расписание Майи</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    background: #f4f6fa;
+    color: #2c3e50;
+    padding: 12px;
+    -webkit-text-size-adjust: 100%;
+  }
+  h1 { font-size: 18px; margin-bottom: 4px; color: #1a2a4a; }
+  .subtitle { font-size: 12px; color: #6b7a90; margin-bottom: 12px; }
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 6px 10px;
+    margin-bottom: 10px; padding: 8px 10px;
+    background: #fff; border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; }
+  .swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+  .view-toggle { display: flex; gap: 6px; margin-bottom: 10px; }
+  .view-toggle button {
+    flex: 1; padding: 8px 10px; font-size: 13px; font-weight: 600;
+    border: 1px solid #d5dbe6; background: #fff; color: #55627a;
+    border-radius: 8px; cursor: pointer; font-family: inherit;
+  }
+  .view-toggle button.active {
+    background: #4a90d9; border-color: #4a90d9; color: #fff;
+  }
+
+  .desktop-view { display: none; }
+  .mobile-view { display: block; }
+
+  body.force-horizontal .desktop-view { display: block; }
+  body.force-horizontal .mobile-view { display: none; }
+  body.force-vertical .desktop-view { display: none; }
+  body.force-vertical .mobile-view { display: block; }
+
+  @media (min-width: 701px) {
+    .desktop-view { display: block; }
+    .mobile-view { display: none; }
+    body.force-horizontal .desktop-view { display: block; }
+    body.force-horizontal .mobile-view { display: none; }
+    body.force-vertical .desktop-view { display: none; }
+    body.force-vertical .mobile-view { display: block; }
+  }
+
+  /* === ГОРИЗОНТАЛЬНАЯ ДИАГРАММА === */
+  .chart-wrapper {
+    overflow-x: auto; background: #fff; border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07); padding: 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .gantt {
+    display: grid;
+    grid-template-columns: 70px repeat(34, minmax(22px, 1fr));
+    gap: 0; min-width: 960px; position: relative;
+    border-left: 1px solid #b9c4d4; border-right: 1px solid #b9c4d4;
+  }
+  .cell { height: 38px; background: #f0f3f8; position: relative; border-right: 1px solid #e3e9f2; }
+  .cell.hour-start { background: #e6ebf3; }
+  .cell.hour-start::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 1px; background: #b9c4d4;
+  }
+  .cell.weekend-start, .header-cell.weekend-start, .day-label.weekend-start {
+    border-top: 2px solid #b9c4d4;
+  }
+  .header-cell {
+    height: 26px; font-size: 9px; font-weight: 600; color: #55627a;
+    display: flex; align-items: center; justify-content: center;
+    border-right: 1px solid #e3e9f2; background: #f7f9fc; position: relative;
+  }
+  .header-cell.hour-start { color: #2c3e50; font-weight: 700; background: #eef2f8; }
+  .header-cell.hour-start::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 1px; background: #b9c4d4;
+  }
+  .header-cell.half {
+    color: #b0bacb; font-weight: 400; font-size: 8px;
+    border-right: none; background: #f7f9fc;
+  }
+  .day-label {
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 11px; color: #1a2a4a; height: 38px;
+    background: #eef1f7; border-right: 1px solid #b9c4d4;
+    border-bottom: 1px solid #e3e9f2;
+  }
+  .day-label.weekend { background: #e3ddf0; color: #4a3a6a; }
+  .block {
+    position: absolute; height: 38px; border-radius: 5px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: #fff; font-size: 9px; font-weight: 600; line-height: 1.1;
+    padding: 0 3px; text-align: center; overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.18); z-index: 2;
+    cursor: pointer; transition: transform 0.1s;
+  }
+  .block:active { transform: scale(0.97); }
+  .block .name { white-space: nowrap; }
+  .block .time { font-weight: 400; font-size: 8px; opacity: 0.95; white-space: nowrap; }
+  .block .icon-only { font-size: 16px; line-height: 1; }
+
+  .block.wake    { background: #6b7a90; }
+  .block.gather  { background: #7f8ea3; }
+  .block.school  { background: #4a90d9; }
+  .block.extra   { background: #3cb371; }
+  .block.volleyball { background: #e0a800; color: #4a3800; }
+  .block.kgd     { background: #f0883e; }
+  .block.art     { background: #9b59b6; }
+  .block.english { background: #e74c3c; }
+  .block.road    { background: #b0b8c4; }
+  .block.lunch   { background: #d98e4a; }
+  .block.snack   { background: #8d6e63; }
+  .block.dinner  { background: #a0522d; }
+  .block.homework { background: #5a7fb8; }
+  .block.free    { background: #cfdcec; color: #4a5a75; }
+  .block.bed     { background: #4a5a75; }
+  .block.sleep   { background: #2c3e50; }
+
+  /* === ВЕРТИКАЛЬНЫЙ ВИД === */
+  .day-card {
+    background: #fff; border-radius: 12px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.07);
+    margin-bottom: 12px; overflow: hidden;
+  }
+  .day-card.weekend .day-card-header { background: #e3ddf0; color: #4a3a6a; }
+  .day-card-header {
+    padding: 10px 14px; font-weight: 700; font-size: 14px;
+    background: #eef1f7; color: #1a2a4a; border-bottom: 1px solid #e3e9f2;
+  }
+  .day-card-body { padding: 8px 10px 10px; }
+  .entry {
+    display: flex; align-items: stretch; gap: 8px;
+    margin-bottom: 6px; cursor: pointer; border-radius: 6px;
+    padding: 2px 0; transition: background 0.1s;
+  }
+  .entry:active { background: #f4f6fa; }
+  .entry:last-child { margin-bottom: 0; }
+  .entry-bar { width: 4px; border-radius: 2px; flex-shrink: 0; }
+  .entry-bar.wake    { background: #6b7a90; }
+  .entry-bar.gather  { background: #7f8ea3; }
+  .entry-bar.school  { background: #4a90d9; }
+  .entry-bar.extra   { background: #3cb371; }
+  .entry-bar.volleyball { background: #e0a800; }
+  .entry-bar.kgd     { background: #f0883e; }
+  .entry-bar.art     { background: #9b59b6; }
+  .entry-bar.english { background: #e74c3c; }
+  .entry-bar.road    { background: #b0b8c4; }
+  .entry-bar.lunch   { background: #d98e4a; }
+  .entry-bar.snack   { background: #8d6e63; }
+  .entry-bar.dinner  { background: #a0522d; }
+  .entry-bar.homework { background: #5a7fb8; }
+  .entry-bar.free    { background: #cfdcec; }
+  .entry-bar.bed     { background: #4a5a75; }
+  .entry-bar.sleep   { background: #2c3e50; }
+
+  .entry-content { flex: 1; min-width: 0; }
+  .entry-title { font-size: 13px; font-weight: 600; color: #2c3e50; line-height: 1.2; }
+  .entry-time { font-size: 12px; color: #6b7a90; margin-top: 1px; }
+  .entry.dim .entry-title { color: #8894a8; font-weight: 500; }
+  .entry.dim .entry-time { color: #a8b3c4; }
+
+  .hint { font-size: 11px; color: #6b7a90; text-align: center; margin-top: 8px; }
+
+  /* === МОДАЛЬНОЕ ОКНО === */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45); z-index: 100;
+    align-items: flex-end; justify-content: center;
+    animation: fadeIn 0.15s ease;
+  }
+  .modal-overlay.active { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal-card {
+    background: #fff; border-radius: 20px 20px 0 0;
+    width: 100%; max-width: 480px;
+    padding: 20px 20px 28px;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.18);
+    animation: slideUp 0.2s ease;
+    padding-bottom: max(28px, env(safe-area-inset-bottom));
+    max-height: 85vh; overflow-y: auto;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0.6; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .modal-grip {
+    width: 36px; height: 4px; background: #d5dbe6;
+    border-radius: 2px; margin: 0 auto 14px;
+  }
+  .modal-color-bar { height: 6px; border-radius: 3px; margin-bottom: 14px; }
+  .modal-title {
+    font-size: 18px; font-weight: 700; color: #1a2a4a;
+    margin-bottom: 4px; line-height: 1.2;
+  }
+  .modal-day { font-size: 13px; color: #6b7a90; margin-bottom: 16px; }
+  .modal-row {
+    display: flex; justify-content: space-between;
+    padding: 10px 0; border-top: 1px solid #eef2f8; font-size: 14px;
+  }
+  .modal-row:first-of-type { border-top: none; }
+  .modal-row .label { color: #6b7a90; }
+  .modal-row .value { color: #1a2a4a; font-weight: 600; }
+
+  .modal-lessons-title {
+    font-size: 13px; font-weight: 700; color: #1a2a4a;
+    margin: 16px 0 8px; padding-top: 14px;
+    border-top: 1px solid #eef2f8;
+  }
+  .modal-lessons { display: flex; flex-direction: column; gap: 4px; }
+  .modal-lesson {
+    display: flex; gap: 10px; font-size: 13px;
+    padding: 6px 0; border-bottom: 1px dashed #eef2f8;
+  }
+  .modal-lesson:last-child { border-bottom: none; }
+  .modal-lesson .num { width: 18px; color: #a8b3c4; flex-shrink: 0; font-weight: 600; }
+  .modal-lesson .time { width: 92px; color: #6b7a90; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .modal-lesson .subject { flex: 1; color: #2c3e50; }
+
+  .modal-close {
+    display: block; width: 100%; margin-top: 18px;
+    padding: 12px; font-size: 15px; font-weight: 600;
+    color: #fff; background: #4a90d9; border: none;
+    border-radius: 12px; cursor: pointer; font-family: inherit;
+  }
+  .modal-close:active { background: #3a7ab9; }
+</style>
+</head>
+<body>
+
+<h1>📅 Расписание Майи</h1>
+<p class="subtitle">Пн–Сб · Подъём 06:00 · Сбор в школу 06:30 · Сон 22:30–06:30</p>
+
+<div class="legend" id="legend"></div>
+
+<div class="view-toggle">
+  <button data-view="vertical" class="active">Вертикально</button>
+  <button data-view="horizontal">Горизонтально</button>
+</div>
+
+<div class="desktop-view">
+  <div class="chart-wrapper">
+    <div class="gantt" id="gantt"></div>
+  </div>
+</div>
+
+<div class="mobile-view" id="mobileList"></div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal-card">
+    <div class="modal-grip"></div>
+    <div class="modal-color-bar" id="modalColor"></div>
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-day" id="modalDay"></div>
+    <div class="modal-row"><span class="label">Начало</span><span class="value" id="modalStart"></span></div>
+    <div class="modal-row"><span class="label">Конец</span><span class="value" id="modalEnd"></span></div>
+    <div class="modal-row"><span class="label">Длительность</span><span class="value" id="modalDuration"></span></div>
+    <div id="modalLessonsWrap" style="display:none">
+      <div class="modal-lessons-title">Уроки в этот день</div>
+      <div class="modal-lessons" id="modalLessons"></div>
+    </div>
+    <button class="modal-close" id="modalClose">Закрыть</button>
+  </div>
+</div>
+
+<script>
+  const START_HOUR = 6;   // 06:00
+  const END_HOUR = 23;    // 23:00
+  const TOTAL_SLOTS = Math.round((END_HOUR - START_HOUR) * 2); // 34
+
+  const days = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
+  const dayShort = {
+    'Понедельник': 'Пн', 'Вторник': 'Вт', 'Среда': 'Ср',
+    'Четверг': 'Чт', 'Пятница': 'Пт', 'Суббота': 'Сб', 'Воскресенье': 'Вс'
+  };
+  const weekends = ['Суббота', 'Воскресенье'];
+
+  const schoolLessons = {
+    'Понедельник': [
+      { time: '08:50–09:30', subject: 'Физическая культура' },
+      { time: '09:40–10:20', subject: 'История' },
+      { time: '10:40–11:20', subject: 'Математика' },
+      { time: '11:40–12:20', subject: 'Русский язык' },
+      { time: '12:30–13:10', subject: 'Математика' },
+    ],
+    'Вторник': [
+      { time: '08:00–08:40', subject: 'Музыка' },
+      { time: '08:50–09:30', subject: 'Труд (технология)' },
+      { time: '09:40–10:20', subject: 'Труд (технология)' },
+      { time: '10:40–11:20', subject: 'История' },
+      { time: '11:40–12:20', subject: 'Русский язык' },
+      { time: '12:30–13:10', subject: 'Литература' },
+    ],
+    'Среда': [
+      { time: '08:00–08:40', subject: 'Математика' },
+      { time: '08:50–09:30', subject: 'Биология' },
+      { time: '09:40–10:20', subject: 'Литература' },
+      { time: '10:40–11:20', subject: 'Русский язык' },
+      { time: '11:40–12:20', subject: 'География' },
+      { time: '12:30–13:10', subject: 'Иностранный (английский) язык' },
+    ],
+    'Четверг': [
+      { time: '08:00–08:40', subject: 'Изобразительное искусство' },
+      { time: '08:50–09:30', subject: 'Физическая культура' },
+      { time: '09:40–10:20', subject: 'История' },
+      { time: '10:40–11:20', subject: 'Русский язык' },
+      { time: '11:40–12:20', subject: 'Математика' },
+      { time: '12:30–13:10', subject: 'Английский язык и культура англоговорящих стран' },
+    ],
+    'Пятница': [
+      { time: '08:00–08:40', subject: 'Математика' },
+      { time: '08:50–09:30', subject: 'Литература' },
+      { time: '09:40–10:20', subject: 'Русский язык' },
+      { time: '10:40–11:20', subject: 'Функциональная грамотность' },
+      { time: '11:40–12:20', subject: 'Иностранный (английский) язык' },
+      { time: '12:30–13:10', subject: 'Безопасность в современной среде обитания' },
+    ],
+    'Суббота': [],
+    'Воскресенье': [],
+  };
+
+  const typeNames = {
+    wake: 'Подъём', gather: 'Сбор в школу', school: 'Школа', extra: 'Доп. занятия',
+    volleyball: 'Волейбол', kgd: 'КГД', art: 'ДХШ',
+    english: 'Английский', road: 'Дорога', lunch: 'Обед', snack: 'Перекус',
+    dinner: 'Ужин', homework: 'Домашка', free: 'Св. время', bed: 'Сказка', sleep: 'Сон'
+  };
+  const typeColors = {
+    wake: '#6b7a90', gather: '#7f8ea3', school: '#4a90d9', extra: '#3cb371',
+    volleyball: '#e0a800', kgd: '#f0883e', art: '#9b59b6',
+    english: '#e74c3c', road: '#b0b8c4', lunch: '#d98e4a', snack: '#8d6e63',
+    dinner: '#a0522d', homework: '#5a7fb8', free: '#cfdcec', bed: '#4a5a75', sleep: '#2c3e50'
+  };
+
+  function slotToTime(slot) {
+    const totalMin = Math.round(START_HOUR * 60 + slot * 30);
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+  }
+  function formatDuration(slots) {
+    const totalMin = Math.round(slots * 30);
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    if (h && m) return `${h} ч ${m} мин`;
+    if (h) return `${h} ч`;
+    return `${m} мин`;
+  }
+  function getRealInterval(type, startSlot, endSlot) {
+    if (type === 'sleep') {
+      return { interval: '22:30–06:30', duration: '8 ч' };
+    }
+    return {
+      interval: slotToTime(startSlot) + '–' + slotToTime(endSlot),
+      duration: formatDuration(endSlot - startSlot)
+    };
+  }
+
+  // Слоты: 0 = 06:00, 1 = 06:30, 2 = 07:00, ... 34 = 23:00
+  const events = [
+    // Утро — будни
+    ...days.slice(0, 5).map(d => [d, 0, 1, 'wake', 'Подъём', '06:00–06:30']),
+    ...days.slice(0, 5).map(d => [d, 1, 3, 'gather', 'Сбор в школу', '06:30–07:30']),
+    // Утро — выходные (Подъём 06:00–08:00)
+    ...days.slice(5, 7).map(d => [d, 0, 4, 'wake', 'Подъём', '06:00–08:00']),
+
+    // Дорога в школу — только будни
+    ...days.slice(0, 5).map(d => [d, 3, 4, 'road', 'Дорога', '07:30–08:00']),
+
+    // Школа — будни 08:00–13:10
+    ...days.slice(0, 5).map(d => [d, 4, 14.33, 'school', 'Школа', '08:00–13:10']),
+
+    // Доп. занятия: пн, вт, чт, пт — 13:10–14:10
+    ['Понедельник', 14.33, 16.33, 'extra', 'Доп. занятия', '13:10–14:10'],
+    ['Вторник',     14.33, 16.33, 'extra', 'Доп. занятия', '13:10–14:10'],
+    ['Четверг',     14.33, 16.33, 'extra', 'Доп. занятия', '13:10–14:10'],
+    ['Пятница',     14.33, 16.33, 'extra', 'Доп. занятия', '13:10–14:10'],
+
+    // Перекус 🍔: вт, чт — 14:10–14:20
+    ['Вторник', 16.33, 16.67, 'snack', 'Перекус', '14:10–14:20'],
+    ['Четверг', 16.33, 16.67, 'snack', 'Перекус', '14:10–14:20'],
+
+    // Волейбол: вт, чт 14:20–15:30
+    ['Вторник', 16.67, 19, 'volleyball', 'Волейбол', '14:20–15:30'],
+    ['Четверг', 16.67, 19, 'volleyball', 'Волейбол', '14:20–15:30'],
+
+    // Дорога домой (20 мин)
+    ['Понедельник', 16.33, 17, 'road', 'Дорога', '14:10–14:30'],
+    ['Вторник',     19, 19.67, 'road', 'Дорога', '15:30–15:50'],
+    ['Среда',       14.33, 15, 'road', 'Дорога', '13:10–13:30'],
+    ['Четверг',     19, 19.67, 'road', 'Дорога', '15:30–15:50'],
+    ['Пятница',     16.33, 17, 'road', 'Дорога', '14:10–14:30'],
+
+    // Обед (30 мин)
+    ['Понедельник', 17, 18, 'lunch', 'Обед', '14:30–15:00'],
+    ['Вторник',     19.67, 20.67, 'lunch', 'Обед', '15:50–16:20'],
+    ['Среда',       15, 16, 'lunch', 'Обед', '13:30–14:00'],
+    ['Четверг',     19.67, 20.67, 'lunch', 'Обед', '15:50–16:20'],
+    ['Пятница',     17, 18, 'lunch', 'Обед', '14:30–15:00'],
+
+    // Дорога 16:40–17:00 — будни
+    ['Понедельник', 21.33, 22, 'road', 'Дорога', '16:40–17:00'],
+    ['Вторник',     21.33, 22, 'road', 'Дорога', '16:40–17:00'],
+    ['Среда',       21.33, 22, 'road', 'Дорога', '16:40–17:00'],
+    ['Четверг',     21.33, 22, 'road', 'Дорога', '16:40–17:00'],
+    ['Пятница',     21.33, 22, 'road', 'Дорога', '16:40–17:00'],
+
+    // КГД: вт, пт 17:00–18:00
+    ['Вторник', 22, 24, 'kgd', 'КГД', '17:00–18:00'],
+    ['Пятница', 22, 24, 'kgd', 'КГД', '17:00–18:00'],
+
+    // ДХШ: пн, ср, чт 17:00–20:00
+    ['Понедельник', 22, 28, 'art', 'ДХШ', '17:00–20:00'],
+    ['Среда',       22, 28, 'art', 'ДХШ', '17:00–20:00'],
+    ['Четверг',     22, 28, 'art', 'ДХШ', '17:00–20:00'],
+
+    // Англ.: вт 19:30–20:30; пт 19:00–20:00
+    ['Вторник', 27, 29, 'english', 'Английский', '19:30–20:30'],
+    ['Пятница', 26, 28, 'english', 'Английский', '19:00–20:00'],
+
+    // Ужин (30 мин, будни)
+    ['Понедельник', 28, 29, 'dinner', 'Ужин', '20:00–20:30'],
+    ['Вторник',     29, 30, 'dinner', 'Ужин', '20:30–21:00'],
+    ['Среда',       28, 29, 'dinner', 'Ужин', '20:00–20:30'],
+    ['Четверг',     28, 29, 'dinner', 'Ужин', '20:00–20:30'],
+    ['Пятница',     28, 29, 'dinner', 'Ужин', '20:00–20:30'],
+
+    // Домашка
+    ['Понедельник', 18, 21.33, 'homework', 'Домашка', '15:00–16:40'],
+    ['Вторник',     25, 27, 'homework', 'Домашка', '18:30–19:30'],
+    ['Среда',       16, 21.33, 'homework', 'Домашка', '14:00–16:40'],
+    ['Четверг',     29, 32, 'homework', 'Домашка', '20:30–22:00'],
+    ['Пятница',     18, 21.33, 'homework', 'Домашка', '15:00–16:40'],
+
+    // Свободное время — будни
+    ['Понедельник', 29, 32, 'free', '', ''],
+    ['Вторник', 20.67, 21.33, 'free', '', ''],
+    ['Вторник', 24, 25, 'free', '', ''],
+    ['Вторник', 30, 32, 'free', '', ''],
+    ['Среда', 29, 32, 'free', '', ''],
+    ['Четверг', 20.67, 21.33, 'free', '', ''],
+    ['Пятница', 24, 26, 'free', '', ''],
+    ['Пятница', 29, 32, 'free', '', ''],
+
+    // Свободное время — выходные (после Подъёма 08:00–22:00)
+    ['Суббота', 4, 32, 'free', '', ''],
+    ['Воскресенье', 4, 32, 'free', '', ''],
+
+    // Сказка 22:00–22:30
+    ...days.map(d => [d, 32, 33, 'bed', 'Сказка', '22:00–22:30']),
+    // Сон 22:30–06:30
+    ...days.map(d => [d, 33, 34, 'sleep', 'Сон', '22:30–06:30']),
+  ];
+
+  const legendData = [
+    ['wake', 'Подъём'], ['gather', 'Сбор в школу'], ['road', 'Дорога'],
+    ['school', 'Школа'], ['extra', 'Доп. занятия'], ['volleyball', 'Волейбол'],
+    ['lunch', 'Обед'], ['kgd', 'КГД'], ['art', 'ДХШ'], ['english', 'Английский'],
+    ['dinner', 'Ужин'], ['homework', 'Домашка'], ['free', 'Св. время'],
+    ['bed', 'Сказка'], ['sleep', 'Сон'],
+  ];
+  const legendEl = document.getElementById('legend');
+  legendData.forEach(([type, label]) => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    const sw = document.createElement('span');
+    sw.className = 'swatch';
+    sw.style.background = typeColors[type];
+    if (type === 'free') sw.style.border = '1px solid #b9c4d4';
+    const txt = document.createElement('span');
+    txt.textContent = label;
+    item.appendChild(sw);
+    item.appendChild(txt);
+    legendEl.appendChild(item);
+  });
+
+  const modal = document.getElementById('modal');
+  const modalColor = document.getElementById('modalColor');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalDay = document.getElementById('modalDay');
+  const modalStart = document.getElementById('modalStart');
+  const modalEnd = document.getElementById('modalEnd');
+  const modalDuration = document.getElementById('modalDuration');
+  const modalLessonsWrap = document.getElementById('modalLessonsWrap');
+  const modalLessons = document.getElementById('modalLessons');
+
+  function openModal(data) {
+    modalColor.style.background = typeColors[data.type];
+    modalTitle.textContent = typeNames[data.type] || data.name;
+    modalDay.textContent = data.day;
+
+    if (data.type === 'sleep') {
+      modalStart.textContent = '22:30';
+      modalEnd.textContent = '06:30';
+      modalDuration.textContent = '8 ч';
+    } else {
+      modalStart.textContent = slotToTime(data.startSlot);
+      modalEnd.textContent = slotToTime(data.endSlot);
+      modalDuration.textContent = formatDuration(data.endSlot - data.startSlot);
+    }
+
+    if (data.type === 'school' && schoolLessons[data.day] && schoolLessons[data.day].length > 0) {
+      modalLessons.innerHTML = '';
+      schoolLessons[data.day].forEach((lesson, idx) => {
+        const row = document.createElement('div');
+        row.className = 'modal-lesson';
+        const num = document.createElement('div');
+        num.className = 'num';
+        num.textContent = (idx + 1) + '.';
+        const time = document.createElement('div');
+        time.className = 'time';
+        time.textContent = lesson.time;
+        const subj = document.createElement('div');
+        subj.className = 'subject';
+        subj.textContent = lesson.subject;
+        row.appendChild(num);
+        row.appendChild(time);
+        row.appendChild(subj);
+        modalLessons.appendChild(row);
+      });
+      modalLessonsWrap.style.display = 'block';
+    } else {
+      modalLessonsWrap.style.display = 'none';
+    }
+
+    modal.classList.add('active');
+  }
+  function closeModal() { modal.classList.remove('active'); }
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  const toggleButtons = document.querySelectorAll('.view-toggle button');
+  toggleButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const view = btn.dataset.view;
+      document.body.classList.remove('force-horizontal', 'force-vertical');
+      if (view === 'horizontal') document.body.classList.add('force-horizontal');
+      if (view === 'vertical') document.body.classList.add('force-vertical');
+      toggleButtons.forEach(b => b.classList.toggle('active', b === btn));
+      setTimeout(() => { renderDesktop(); }, 50);
+    });
+  });
+
+  const gantt = document.getElementById('gantt');
+  const emptyHeader = document.createElement('div');
+  emptyHeader.className = 'header-cell hour-start';
+  emptyHeader.style.background = '#eef1f7';
+  gantt.appendChild(emptyHeader);
+
+  for (let i = 0; i < TOTAL_SLOTS; i++) {
+    const slotHour = START_HOUR + i / 2;
+    const isHalf = i % 2 === 1;
+    const isHourStart = i % 2 === 0;
+    const hc = document.createElement('div');
+    hc.className = 'header-cell' + (isHalf ? ' half' : '') + (isHourStart ? ' hour-start' : '');
+    const h = Math.floor(slotHour);
+    const m = Math.round((slotHour - h) * 60);
+    hc.textContent = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+    gantt.appendChild(hc);
+  }
+
+  days.forEach((day, dayIndex) => {
+    const isWeekend = weekends.includes(day);
+    const label = document.createElement('div');
+    label.className = 'day-label' + (isWeekend ? ' weekend' : '');
+    if (dayIndex === 5) label.classList.add('weekend-start');
+    label.textContent = dayShort[day];
+    label.title = day;
+    gantt.appendChild(label);
+    for (let i = 0; i < TOTAL_SLOTS; i++) {
+      const isHourStart = i % 2 === 0;
+      const cell = document.createElement('div');
+      cell.className = 'cell' + (isHourStart ? ' hour-start' : '');
+      if (dayIndex === 5) cell.classList.add('weekend-start');
+      gantt.appendChild(cell);
+    }
+  });
+
+  function renderDesktop() {
+    gantt.querySelectorAll('.block').forEach(b => b.remove());
+    if (gantt.offsetWidth === 0) return;
+
+    const ganttRect = gantt.getBoundingClientRect();
+    const headerCells = gantt.querySelectorAll('.header-cell');
+    const slotCells = Array.from(headerCells).slice(1);
+    if (slotCells.length === 0) return;
+    const firstRect = slotCells[0].getBoundingClientRect();
+    const lastRect  = slotCells[slotCells.length - 1].getBoundingClientRect();
+    const chartLeft  = firstRect.left - ganttRect.left;
+    const chartRight = lastRect.right - ganttRect.left;
+    const chartWidth = chartRight - chartLeft;
+    const dayRowHeight = 38;
+    const headerHeight = 26;
+
+    events.forEach(([day, startSlot, endSlot, type, name, realTime]) => {
+      const dayIndex = days.indexOf(day);
+      if (dayIndex === -1) return;
+      const rowTop = headerHeight + dayIndex * dayRowHeight;
+      const startFrac = startSlot / TOTAL_SLOTS;
+      const endFrac   = endSlot   / TOTAL_SLOTS;
+      const left  = chartLeft + startFrac * chartWidth;
+      const width = (endFrac - startFrac) * chartWidth;
+      const block = document.createElement('div');
+      block.className = 'block ' + type;
+      block.style.left = left + 'px';
+      block.style.top = rowTop + 'px';
+      block.style.width = Math.max(width, 20) + 'px';
+      block.style.height = dayRowHeight + 'px';
+
+      const real = getRealInterval(type, startSlot, endSlot);
+      const displayName = typeNames[type] || name || '—';
+      block.title = `${day} · ${displayName} · ${real.interval} (${real.duration})`;
+
+      if (type === 'snack') {
+        const iconEl = document.createElement('div');
+        iconEl.className = 'icon-only';
+        iconEl.textContent = '🍔';
+        block.appendChild(iconEl);
+      } else {
+        const nameEl = document.createElement('div');
+        nameEl.className = 'name';
+        nameEl.textContent = displayName;
+        block.appendChild(nameEl);
+
+        const alwaysShowTime = (type === 'road' || type === 'sleep' || type === 'bed' || type === 'lunch' || type === 'dinner');
+        if (alwaysShowTime || width >= 32) {
+          const timeEl = document.createElement('div');
+          timeEl.className = 'time';
+          if (type === 'sleep') {
+            timeEl.textContent = '22:30–06:30';
+          } else {
+            timeEl.textContent = slotToTime(startSlot) + '–' + slotToTime(endSlot);
+          }
+          block.appendChild(timeEl);
+        }
+      }
+
+      block.addEventListener('click', () => {
+        openModal({ day, startSlot, endSlot, type, name });
+      });
+      gantt.appendChild(block);
+    });
+  }
+
+  function renderMobileList() {
+    const listEl = document.getElementById('mobileList');
+    listEl.innerHTML = '';
+
+    days.forEach(day => {
+      const isWeekend = weekends.includes(day);
+
+      const card = document.createElement('div');
+      card.className = 'day-card' + (isWeekend ? ' weekend' : '');
+
+      const header = document.createElement('div');
+      header.className = 'day-card-header';
+      header.textContent = day;
+      card.appendChild(header);
+
+      const body = document.createElement('div');
+      body.className = 'day-card-body';
+
+      const dayEvents = events
+        .filter(e => e[0] === day)
+        .sort((a, b) => a[1] - b[1]);
+
+      dayEvents.forEach(([d, startSlot, endSlot, type, name, realTime]) => {
+        const entry = document.createElement('div');
+        entry.className = 'entry' + (type === 'free' ? ' dim' : '');
+
+        const bar = document.createElement('div');
+        bar.className = 'entry-bar ' + type;
+        entry.appendChild(bar);
+
+        const content = document.createElement('div');
+        content.className = 'entry-content';
+
+        const title = document.createElement('div');
+        title.className = 'entry-title';
+        if (type === 'snack') {
+          title.textContent = '🍔 Перекус';
+        } else {
+          title.textContent = typeNames[type] || name || '—';
+        }
+
+        const time = document.createElement('div');
+        time.className = 'entry-time';
+        if (type === 'sleep') {
+          time.textContent = '22:30–06:30';
+        } else {
+          time.textContent = slotToTime(startSlot) + '–' + slotToTime(endSlot);
+        }
+
+        content.appendChild(title);
+        content.appendChild(time);
+        entry.appendChild(content);
+
+        entry.addEventListener('click', () => {
+          openModal({ day, startSlot, endSlot, type, name });
+        });
+
+        body.appendChild(entry);
+      });
+
+      card.appendChild(body);
+      listEl.appendChild(card);
+    });
+  }
+
+  window.addEventListener('load', () => {
+    renderDesktop();
+    renderMobileList();
+  });
+  window.addEventListener('resize', () => {
+    renderDesktop();
+  });
+  setTimeout(() => { renderDesktop(); renderMobileList(); }, 100);
+</script>
+
+</body>
+</html>
